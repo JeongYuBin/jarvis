@@ -8,7 +8,12 @@ function App() {
   const [text, setText] = useState("JARVIS 시스템 대기 중...");
   const [page, setPage] = useState("home");
   const [memos, setMemos] = useState([]);
+  const [memoInput, setMemoInput] = useState("");
+  const [editingMemoId, setEditingMemoId] = useState(null);
   const [schedules, setSchedules] = useState([]);
+  const [scheduleInput, setScheduleInput] = useState("");
+  const [scheduleDateInput, setScheduleDateInput] = useState("");
+  const [editingScheduleId, setEditingScheduleId] = useState(null);
   const [modes, setModes] = useState([]);
   const [modeName, setModeName] = useState("");
   const [modeActions, setModeActions] = useState("");
@@ -32,9 +37,10 @@ function App() {
   }, [page]);
 
   useEffect(() => {
-    fetchMemos();
-    fetchSchedules();
-  }, []);
+  fetchMemos();
+  fetchSchedules();
+  fetchModes();
+}, []);
 
   const loadScript = (src) => {
   return new Promise((resolve, reject) => {
@@ -93,6 +99,7 @@ const loadMediaPipe = async () => {
 
     if (targetPage === "memo") fetchMemos();
     if (targetPage === "calendar") fetchSchedules();
+    if (targetPage === "mode") fetchModes();
   };
 
   const moveNextPage = () => {
@@ -136,6 +143,37 @@ const loadMediaPipe = async () => {
     await fetchSchedules();
   };
 
+  const saveMemoDirectly = async () => {
+    if (!memoInput.trim()) {
+      setText("메모 내용을 입력해주세요.");
+      return;
+    }
+
+    if (editingMemoId) {
+      await fetch(`${API_URL}/memos/${editingMemoId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content: memoInput }),
+      });
+
+      setText("메모를 수정했습니다.");
+    } else {
+      await addMemo(memoInput);
+      setText("메모를 추가했습니다.");
+    }
+
+    setMemoInput("");
+    setEditingMemoId(null);
+    await fetchMemos();
+  };
+
+  const editMemo = (memo) => {
+    setMemoInput(memo.content);
+    setEditingMemoId(memo.id);
+  };
+
   const deleteMemo = async (id) => {
     await fetch(`${API_URL}/memos/${id}`, {
       method: "DELETE",
@@ -150,6 +188,46 @@ const loadMediaPipe = async () => {
     });
 
     await fetchSchedules();
+  };
+
+  const saveScheduleDirectly = async () => {
+    if (!scheduleInput.trim() || !scheduleDateInput) {
+      setText("일정 내용과 날짜를 입력해주세요.");
+      return;
+    }
+
+    if (editingScheduleId) {
+      await fetch(`${API_URL}/schedules/${editingScheduleId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          content: scheduleInput,
+          schedule_date: scheduleDateInput,
+        }),
+      });
+
+      setText("일정을 수정했습니다.");
+    } else {
+      await addSchedule(scheduleInput, scheduleDateInput);
+      setText("일정을 추가했습니다.");
+    }
+
+    setScheduleInput("");
+    setScheduleDateInput("");
+    setEditingScheduleId(null);
+    await fetchSchedules();
+  };
+
+  const editSchedule = (schedule) => {
+    setScheduleInput(schedule.content);
+    setScheduleDateInput(schedule.schedule_date);
+    setEditingScheduleId(schedule.id);
+
+    const date = new Date(schedule.schedule_date);
+    setCurrentYear(date.getFullYear());
+    setCurrentMonth(date.getMonth());
   };
 
   const parseScheduleCommand = (command) => {
@@ -187,8 +265,17 @@ const loadMediaPipe = async () => {
     };
   };
 
+  const normalizeText = (text) => {
+    return text
+      .toLowerCase()
+      .replace(/\s/g, "")
+      .replace(/자비스/g, "")
+      .replace(/jarvis/g, "")
+      .trim();
+  };
+
   const handleCommand = async (command) => {
-    const normalizedCommand = command.toLowerCase();
+    const normalizedCommand = normalizeText(command);
 
     if (
       command.includes("메인") ||
@@ -275,16 +362,22 @@ const loadMediaPipe = async () => {
       return;
     }
 
-    if (command.includes("모드")) {
-      const modeName = command.replace("자비스", "").replace("모드", "").trim();
+    if (normalizedCommand.includes("모드") && normalizedCommand.includes("실행")) {
+    const targetMode = modes.find((mode) => {
+      const normalizedModeName = normalizeText(mode.name);
+      return normalizedCommand.includes(normalizedModeName);
+    });
 
-      const targetMode = modes.find((m) => m.name.includes(modeName));
-
-      if (targetMode) {
-        runMode(targetMode);
-        return;
-      }
+    if (targetMode) {
+      runMode(targetMode);
+      return;
     }
+
+    const reply = "해당 모드를 찾지 못했습니다.";
+    setText(reply);
+    speak(reply);
+    return;
+  }
 
     const reply = "아직 등록되지 않은 명령입니다.";
     setText(reply);
@@ -379,7 +472,7 @@ const handleGestureResult = (results) => {
     gestureStartXRef.current = palmX;
     movePrevPage();
     return;
-  }
+  } 
 };
 
   const startGestureMode = async () => {
@@ -469,26 +562,43 @@ const handleGestureResult = (results) => {
 
   // Mode 실행 함수(GameMode, StudeMode)
   const runMode = (mode) => {
-    const actions = JSON.parse(mode.actions);
+    let actions = [];
 
-    actions.forEach((action) => {
-      if (action.type === "open_url") {
-        window.open(action.value, "_blank");
-      }
-    });
+    try {
+      actions =
+        typeof mode.actions === "string" ? JSON.parse(mode.actions) : mode.actions;
+    } catch (error) {
+      console.error("모드 실행 파싱 오류:", error);
+      setText("모드 실행 정보를 읽지 못했습니다.");
+      return;
+    }
 
-    setText(`${mode.name} 실행`);
-    speak(`${mode.name} 실행합니다`);
+    actions
+      .filter((action) => action.value && action.value.trim() !== "")
+      .forEach((action, index) => {
+        if (action.type === "open_url") {
+          setTimeout(() => {
+            window.open(action.value, "_blank", "noopener,noreferrer");
+          }, index * 300);
+        }
+      });
+
+    setText(`${mode.name}를 실행합니다.`);
+    speak(`${mode.name}를 실행합니다.`);
   };
 
   // Mode 생성 / 수정
   const saveMode = async () => {
-    if (!modeName || !modeActions) return;
+    if (!modeName.trim() || !modeActions.trim()) return;
 
-    const actions = modeActions.split("\n").map((url) => ({
-      type: "open_url",
-      value: url.trim(),
-    }));
+    const actions = modeActions
+      .split("\n")
+      .map((url) => url.trim())
+      .filter((url) => url !== "")
+      .map((url) => ({
+        type: "open_url",
+        value: url,
+      }));
 
     if (editingModeId) {
       await fetch(`${API_URL}/modes/${editingModeId}`, {
@@ -508,7 +618,7 @@ const handleGestureResult = (results) => {
     setModeActions("");
     setEditingModeId(null);
 
-    fetchModes();
+    await fetchModes();
   };
 
   // Mode 삭제
@@ -603,8 +713,27 @@ const handleGestureResult = (results) => {
           <section className="page-section">
             <h2>Memo Page</h2>
 
-            <div className="panel">
-              <p>{text}</p>
+            <div className="memo-form">
+              <input
+                placeholder="메모 내용을 입력하세요"
+                value={memoInput}
+                onChange={(e) => setMemoInput(e.target.value)}
+              />
+
+              <button onClick={saveMemoDirectly}>
+                {editingMemoId ? "메모 수정 완료" : "메모 추가"}
+              </button>
+
+              {editingMemoId && (
+                <button
+                  onClick={() => {
+                    setMemoInput("");
+                    setEditingMemoId(null);
+                  }}
+                >
+                  수정 취소
+                </button>
+              )}
             </div>
 
             <div className="memo-box">
@@ -614,12 +743,16 @@ const handleGestureResult = (results) => {
                 memos.map((memo) => (
                   <div className="memo-item" key={memo.id}>
                     <span>- {memo.content}</span>
-                    <button
-                      className="delete-btn"
-                      onClick={() => deleteMemo(memo.id)}
-                    >
-                      삭제
-                    </button>
+
+                    <div className="item-buttons">
+                      <button onClick={() => editMemo(memo)}>수정</button>
+                      <button
+                        className="delete-btn"
+                        onClick={() => deleteMemo(memo.id)}
+                      >
+                        삭제
+                      </button>
+                    </div>
                   </div>
                 ))
               )}
@@ -657,15 +790,45 @@ const handleGestureResult = (results) => {
                       {daySchedules.map((schedule) => (
                         <div className="schedule-item" key={schedule.id}>
                           <span>{schedule.content}</span>
-                          <button onClick={() => deleteSchedule(schedule.id)}>
-                            x
-                          </button>
+                          <div className="schedule-buttons">
+                            <button onClick={() => editSchedule(schedule)}>수정</button>
+                            <button onClick={() => deleteSchedule(schedule.id)}>x</button>
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
                 );
               })}
+            </div>
+            <div className="schedule-form">
+              <input
+                type="date"
+                value={scheduleDateInput}
+                onChange={(e) => setScheduleDateInput(e.target.value)}
+              />
+
+              <input
+                placeholder="일정 내용을 입력하세요"
+                value={scheduleInput}
+                onChange={(e) => setScheduleInput(e.target.value)}
+              />
+
+              <button onClick={saveScheduleDirectly}>
+                {editingScheduleId ? "일정 수정 완료" : "일정 추가"}
+              </button>
+
+              {editingScheduleId && (
+                <button
+                  onClick={() => {
+                    setScheduleInput("");
+                    setScheduleDateInput("");
+                    setEditingScheduleId(null);
+                  }}
+                >
+                  수정 취소
+                </button>
+              )}
             </div>
           </section>
         )}
@@ -683,7 +846,7 @@ const handleGestureResult = (results) => {
               />
 
               <textarea
-                placeholder="URL 입력 (한 줄에 하나씩)"
+                placeholder="실행한 URL을 한 줄에 하나씩 입력"
                 value={modeActions}
                 onChange={(e) => setModeActions(e.target.value)}
               />
@@ -695,17 +858,21 @@ const handleGestureResult = (results) => {
 
             {/* 리스트 */}
             <div className="mode-box">
-              {modes.map((mode) => (
-                <div key={mode.id} className="mode-item">
-                  <h3>{mode.name}</h3>
+              {modes.length === 0 ? (
+                <p>등록된 모드가 없습니다.</p>
+              ) : (
+                modes.map((mode) => (
+                  <div key={mode.id} className="mode-item">
+                    <h3>{mode.name}</h3>
 
-                  <div className="mode-buttons">
-                    <button onClick={() => runMode(mode)}>실행</button>
-                    <button onClick={() => editMode(mode)}>수정</button>
-                    <button onClick={() => deleteMode(mode.id)}>삭제</button>
+                    <div className="mode-buttons">
+                      <button onClick={() => runMode(mode)}>실행</button>
+                      <button onClick={() => editMode(mode)}>수정</button>
+                      <button onClick={() => deleteMode(mode.id)}>삭제</button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </section>
         )}

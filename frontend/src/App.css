@@ -228,6 +228,58 @@ button:hover {
   color: #dffaff;
 }
 
+.memo-form,
+.schedule-form {
+  width: 80%;
+  margin: 25px auto;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+}
+
+.memo-form input,
+.schedule-form input {
+  flex: 1;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #7beaff;
+  color: #f3fbff;
+  font-size: 16px;
+  outline: none;
+}
+
+.memo-form input::placeholder,
+.schedule-form input::placeholder {
+  color: rgba(223, 250, 255, 0.6);
+}
+
+.memo-form button,
+.schedule-form button {
+  padding: 13px 18px;
+  font-size: 15px;
+}
+
+.item-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.item-buttons button {
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+.schedule-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.schedule-buttons button {
+  padding: 2px 5px;
+  font-size: 10px;
+}
+
 .delete-btn {
   padding: 6px 12px;
   font-size: 14px;
@@ -324,38 +376,61 @@ button:hover {
 }
 
 .mode-form {
-  width: 70%;
-  margin: 20px auto;
+  width: 68%;
+  margin: 20px auto 36px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
 }
 
 .mode-form input,
 .mode-form textarea {
-  padding: 12px;
-  background: transparent;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid #7beaff;
-  color: #fff;
+  color: #f3fbff;
+  font-size: 17px;
+  outline: none;
 }
 
 .mode-form textarea {
-  height: 100px;
+  height: 140px;
+  resize: vertical;
 }
 
 .mode-box {
-  margin-top: 30px;
+  width: 68%;
+  margin: 30px auto 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .mode-item {
   border: 1px solid #7beaff;
-  padding: 20px;
-  margin-bottom: 15px;
+  background: rgba(0, 229, 255, 0.06);
+  padding: 22px 26px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.18);
+}
+
+.mode-item h3 {
+  margin: 0;
+  color: #7beaff;
+  font-size: 24px;
+  letter-spacing: 3px;
 }
 
 .mode-buttons {
   display: flex;
   gap: 10px;
+}
+
+.mode-buttons button {
+  padding: 10px 18px;
+  font-size: 15px;
 }
 
 @keyframes slideIn {
