@@ -136,6 +136,37 @@ app.post("/api/modes", (req, res) => {
   );
 });
 
+// 모드 수정
+app.put("/api/modes/:id", (req, res) => {
+  const { id } = req.params;
+  const { name, actions } = req.body;
+
+  db.run(
+    "UPDATE modes SET name = ?, actions = ? WHERE id = ?",
+    [name, JSON.stringify(actions), id],
+    function (err) {
+      if (err) {
+        return res.status(500).json({ message: "모드 수정 실패" });
+      }
+
+      res.json({ message: "모드 수정 성공" });
+    }
+  );
+});
+
+// 모드 삭제
+app.delete("/api/modes/:id", (req, res) => {
+  const { id } = req.params;
+
+  db.run("DELETE FROM modes WHERE id = ?", [id], function (err) {
+    if (err) {
+      return res.status(500).json({ message: "모드 삭제 실패" });
+    }
+
+    res.json({ message: "모드 삭제 성공" });
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Jarvis backend running on http://localhost:${PORT}`);
 });
