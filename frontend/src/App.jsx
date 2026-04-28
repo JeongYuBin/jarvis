@@ -10,6 +10,9 @@ function App() {
   const [memos, setMemos] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [modes, setModes] = useState([]);
+  const [modeName, setModeName] = useState("");
+  const [modeActions, setModeActions] = useState("");
+  const [editingModeId, setEditingModeId] = useState(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isGestureMode, setIsGestureMode] = useState(false);
   const [gestureText, setGestureText] = useState("제스처 대기 중");
@@ -478,6 +481,56 @@ const handleGestureResult = (results) => {
     speak(`${mode.name} 실행합니다`);
   };
 
+  // Mode 생성 / 수정
+  const saveMode = async () => {
+    if (!modeName || !modeActions) return;
+
+    const actions = modeActions.split("\n").map((url) => ({
+      type: "open_url",
+      value: url.trim(),
+    }));
+
+    if (editingModeId) {
+      await fetch(`${API_URL}/modes/${editingModeId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: modeName, actions }),
+      });
+    } else {
+      await fetch(`${API_URL}/modes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: modeName, actions }),
+      });
+    }
+
+    setModeName("");
+    setModeActions("");
+    setEditingModeId(null);
+
+    fetchModes();
+  };
+
+  // Mode 삭제
+  const deleteMode = async (id) => {
+    await fetch(`${API_URL}/modes/${id}`, {
+      method: "DELETE",
+    });
+
+    fetchModes();
+  };
+
+  // Mode 수정 버튼 클릭 시
+  const editMode = (mode) => {
+    setModeName(mode.name);
+
+    const parsed = JSON.parse(mode.actions);
+    const urls = parsed.map((a) => a.value).join("\n");
+
+    setModeActions(urls);
+    setEditingModeId(mode.id);
+  };
+
   return (
     <div className="app-layout">
       <button className="hamburger-btn" onClick={() => setIsMenuOpen(true)}>
@@ -621,11 +674,36 @@ const handleGestureResult = (results) => {
           <section className="page-section">
             <h2>Mode Manager</h2>
 
+            {/* 입력 영역 */}
+            <div className="mode-form">
+              <input
+                placeholder="모드 이름 (예: 공부모드)"
+                value={modeName}
+                onChange={(e) => setModeName(e.target.value)}
+              />
+
+              <textarea
+                placeholder="URL 입력 (한 줄에 하나씩)"
+                value={modeActions}
+                onChange={(e) => setModeActions(e.target.value)}
+              />
+
+              <button onClick={saveMode}>
+                {editingModeId ? "수정 완료" : "모드 추가"}
+              </button>
+            </div>
+
+            {/* 리스트 */}
             <div className="mode-box">
               {modes.map((mode) => (
                 <div key={mode.id} className="mode-item">
                   <h3>{mode.name}</h3>
-                  <button onClick={() => runMode(mode)}>실행</button>
+
+                  <div className="mode-buttons">
+                    <button onClick={() => runMode(mode)}>실행</button>
+                    <button onClick={() => editMode(mode)}>수정</button>
+                    <button onClick={() => deleteMode(mode.id)}>삭제</button>
+                  </div>
                 </div>
               ))}
             </div>

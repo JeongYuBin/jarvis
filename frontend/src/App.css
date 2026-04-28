@@ -323,6 +323,41 @@ button:hover {
   border: 1px solid #ff6b6b;
 }
 
+.mode-form {
+  width: 70%;
+  margin: 20px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mode-form input,
+.mode-form textarea {
+  padding: 12px;
+  background: transparent;
+  border: 1px solid #7beaff;
+  color: #fff;
+}
+
+.mode-form textarea {
+  height: 100px;
+}
+
+.mode-box {
+  margin-top: 30px;
+}
+
+.mode-item {
+  border: 1px solid #7beaff;
+  padding: 20px;
+  margin-bottom: 15px;
+}
+
+.mode-buttons {
+  display: flex;
+  gap: 10px;
+}
+
 @keyframes slideIn {
   from {
     transform: translateX(310px);
