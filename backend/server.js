@@ -50,6 +50,28 @@ app.post("/api/memos", (req, res) => {
   });
 });
 
+// 메모 수정
+app.put("/api/memos/:id", (req, res) => {
+  const { id } = req.params;
+  const { content } = req.body;
+
+  if (!content || content.trim() === "") {
+    return res.status(400).json({ message: "메모 내용이 비어 있습니다." });
+  }
+
+  db.run(
+    "UPDATE memos SET content = ? WHERE id = ?",
+    [content, id],
+    function (err) {
+      if (err) {
+        return res.status(500).json({ message: "메모 수정 실패" });
+      }
+
+      res.json({ message: "메모 수정 성공" });
+    }
+  );
+});
+
 // 메모 삭제
 app.delete("/api/memos/:id", (req, res) => {
   const { id } = req.params;
@@ -95,6 +117,28 @@ app.post("/api/schedules", (req, res) => {
         content,
         schedule_date,
       });
+    }
+  );
+});
+
+// 달력 수정
+app.put("/api/schedules/:id", (req, res) => {
+  const { id } = req.params;
+  const { content, schedule_date } = req.body;
+
+  if (!content || !schedule_date) {
+    return res.status(400).json({ message: "일정 내용 또는 날짜가 없습니다." });
+  }
+
+  db.run(
+    "UPDATE schedules SET content = ?, schedule_date = ? WHERE id = ?",
+    [content, schedule_date, id],
+    function (err) {
+      if (err) {
+        return res.status(500).json({ message: "일정 수정 실패" });
+      }
+
+      res.json({ message: "일정 수정 성공" });
     }
   );
 });
