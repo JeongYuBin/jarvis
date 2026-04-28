@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
 const API_URL = "http://localhost:4000/api";
-const pages = ["home", "memo", "calendar"];
+const pages = ["home", "memo", "calendar", "mode"];
 
 function App() {
   const [text, setText] = useState("JARVIS 시스템 대기 중...");
   const [page, setPage] = useState("home");
   const [memos, setMemos] = useState([]);
   const [schedules, setSchedules] = useState([]);
+  const [modes, setModes] = useState([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isGestureMode, setIsGestureMode] = useState(false);
   const [gestureText, setGestureText] = useState("제스처 대기 중");
@@ -76,6 +77,12 @@ const loadMediaPipe = async () => {
     const data = await response.json();
     setSchedules(data);
   };
+
+  const fetchModes = async () => {
+    const response = await fetch(`${API_URL}/modes`);
+    const data = await response.json();
+    setModes(data);
+  }
 
   const movePage = (targetPage) => {
     setPage(targetPage);
@@ -265,6 +272,17 @@ const loadMediaPipe = async () => {
       return;
     }
 
+    if (command.includes("모드")) {
+      const modeName = command.replace("자비스", "").replace("모드", "").trim();
+
+      const targetMode = modes.find((m) => m.name.includes(modeName));
+
+      if (targetMode) {
+        runMode(targetMode);
+        return;
+      }
+    }
+
     const reply = "아직 등록되지 않은 명령입니다.";
     setText(reply);
     speak(reply);
@@ -446,6 +464,20 @@ const handleGestureResult = (results) => {
     return schedules.filter((schedule) => schedule.schedule_date === dateKey);
   };
 
+  // Mode 실행 함수(GameMode, StudeMode)
+  const runMode = (mode) => {
+    const actions = JSON.parse(mode.actions);
+
+    actions.forEach((action) => {
+      if (action.type === "open_url") {
+        window.open(action.value, "_blank");
+      }
+    });
+
+    setText(`${mode.name} 실행`);
+    speak(`${mode.name} 실행합니다`);
+  };
+
   return (
     <div className="app-layout">
       <button className="hamburger-btn" onClick={() => setIsMenuOpen(true)}>
@@ -467,6 +499,7 @@ const handleGestureResult = (results) => {
             <button onClick={() => movePage("home")}>Main</button>
             <button onClick={() => movePage("memo")}>Memo</button>
             <button onClick={() => movePage("calendar")}>Calendar</button>
+            <button onClick={() => movePage("mode")}>Mode</button>
           </aside>
         </div>
       )}
@@ -580,6 +613,21 @@ const handleGestureResult = (results) => {
                   </div>
                 );
               })}
+            </div>
+          </section>
+        )}
+
+        {page === "mode" && (
+          <section className="page-section">
+            <h2>Mode Manager</h2>
+
+            <div className="mode-box">
+              {modes.map((mode) => (
+                <div key={mode.id} className="mode-item">
+                  <h3>{mode.name}</h3>
+                  <button onClick={() => runMode(mode)}>실행</button>
+                </div>
+              ))}
             </div>
           </section>
         )}
