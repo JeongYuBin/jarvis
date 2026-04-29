@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
 const API_URL = "http://localhost:4000/api";
-const pages = ["home", "memo", "calendar", "mode"];
+const pages = ["home", "memo", "calendar", "mode", "AI"];
 
 function App() {
   const [text, setText] = useState("JARVIS 시스템 대기 중...");
@@ -21,6 +21,10 @@ function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isGestureMode, setIsGestureMode] = useState(false);
   const [gestureText, setGestureText] = useState("제스처 대기 중");
+  const [aiApiKey, setAiApiKey] = useState("");
+  const [hasAiApiKey, setHasAiApiKey] = useState(false);
+  const [aiQuestion, setAiQuestion] = useState("");
+  const [aiAnswer, setAiAnswer] = useState("");
 
   const today = new Date();
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
@@ -40,6 +44,7 @@ function App() {
   fetchMemos();
   fetchSchedules();
   fetchModes();
+  fetchAiSettings();
 }, []);
 
   const loadScript = (src) => {
@@ -100,6 +105,7 @@ const loadMediaPipe = async () => {
     if (targetPage === "memo") fetchMemos();
     if (targetPage === "calendar") fetchSchedules();
     if (targetPage === "mode") fetchModes();
+    if (targetPage === "AI") fetchAiSettings();
   };
 
   const moveNextPage = () => {
@@ -303,6 +309,12 @@ const loadMediaPipe = async () => {
       return;
     }
 
+    if ( command.includes("모드") || normalizedCommand.includes("mode")) {
+      movePage("mode");
+      setText("모드 화면입니다.");
+      return;
+    }
+
     if (
       command.includes("월") &&
       command.includes("일") &&
@@ -376,6 +388,16 @@ const loadMediaPipe = async () => {
     const reply = "해당 모드를 찾지 못했습니다.";
     setText(reply);
     speak(reply);
+    return;
+  }
+
+  if (
+    command.includes("AI") ||
+    command.includes("에이아이") ||
+    command.includes("생성형")
+  ) {
+    movePage("ai");
+    setText("생성형 AI 페이지입니다.");
     return;
   }
 
@@ -641,6 +663,65 @@ const handleGestureResult = (results) => {
     setEditingModeId(mode.id);
   };
 
+  // AI 모드 세팅
+  const fetchAiSettings = async () => {
+    const response = await fetch(`${API_URL}/ai/settings`);
+    const data = await response.json();
+    setHasAiApiKey(data.hasApiKey);
+  };
+
+  const saveAiApiKey = async () => {
+    if (!aiApiKey.trim()) {
+      setText("API Key를 입력해주세요.");
+      return;
+    }
+
+    await fetch(`${API_URL}/ai/settings`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ apiKey: aiApiKey }),
+    });
+
+    setAiApiKey("");
+    setHasAiApiKey(true);
+    setText("AI API Key를 저장했습니다.");
+  };
+
+  const deleteAiApiKey = async () => {
+    await fetch(`${API_URL}/ai/settings`, {
+      method: "DELETE",
+    });
+
+    setHasAiApiKey(false);
+    setText("AI API Key를 삭제했습니다.");
+  };
+
+  const askAi = async () => {
+    if (!aiQuestion.trim()) return;
+
+    setAiAnswer("생성형 AI가 답변을 생성 중입니다...");
+
+    const response = await fetch(`${API_URL}/ai/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message: aiQuestion }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      setAiAnswer(data.message || "AI 요청 실패");
+      return;
+    }
+
+    setAiAnswer(data.answer);
+    speak(data.answer);
+  };
+
   return (
     <div className="app-layout">
       <button className="hamburger-btn" onClick={() => setIsMenuOpen(true)}>
@@ -663,6 +744,7 @@ const handleGestureResult = (results) => {
             <button onClick={() => movePage("memo")}>Memo</button>
             <button onClick={() => movePage("calendar")}>Calendar</button>
             <button onClick={() => movePage("mode")}>Mode</button>
+            <button onClick={() => movePage("AI")}>AI</button>
           </aside>
         </div>
       )}
@@ -873,6 +955,54 @@ const handleGestureResult = (results) => {
                   </div>
                 ))
               )}
+            </div>
+          </section>
+        )}
+
+        {page === "AI" && (
+          <section className="page-section">
+            <h2>Generative AI</h2>
+
+            <div className="ai-status">
+              {hasAiApiKey ? (
+                <p>API Key가 등록되어 있습니다.</p>
+              ) : (
+                <p>API Key를 등록해야 AI 기능을 사용할 수 있습니다.</p>
+              )}
+            </div>
+
+            <div className="ai-key-form">
+              <input
+                type="password"
+                placeholder="OpenAI API Key 입력"
+                value={aiApiKey}
+                onChange={(e) => setAiApiKey(e.target.value)}
+              />
+
+              <button onClick={saveAiApiKey}>API Key 저장</button>
+
+              {hasAiApiKey && (
+                <button className="delete-btn" onClick={deleteAiApiKey}>
+                  API Key 삭제
+                </button>
+              )}
+            </div>
+
+            <div className="ai-chat-box">
+              <textarea
+                placeholder="Jarvis에게 질문하기"
+                value={aiQuestion}
+                onChange={(e) => setAiQuestion(e.target.value)}
+                disabled={!hasAiApiKey}
+              />
+
+              <button onClick={askAi} disabled={!hasAiApiKey}>
+                질문하기
+              </button>
+
+              <div className="ai-answer">
+                {aiAnswer || "AI 답변이 여기에 표시됩니다."}
+              </div>
             </div>
           </section>
         )}

@@ -433,6 +433,47 @@ button:hover {
   font-size: 15px;
 }
 
+.ai-status {
+  margin: 20px auto;
+  color: #dffaff;
+  font-size: 18px;
+}
+
+.ai-key-form,
+.ai-chat-box {
+  width: 70%;
+  margin: 24px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ai-key-form input,
+.ai-chat-box textarea {
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #7beaff;
+  color: #f3fbff;
+  font-size: 16px;
+  outline: none;
+}
+
+.ai-chat-box textarea {
+  min-height: 130px;
+  resize: vertical;
+}
+
+.ai-answer {
+  min-height: 140px;
+  padding: 20px;
+  text-align: left;
+  white-space: pre-wrap;
+  border: 1px solid #7beaff;
+  background: rgba(0, 229, 255, 0.08);
+  color: #dffaff;
+  line-height: 1.7;
+}
+
 @keyframes slideIn {
   from {
     transform: translateX(310px);
