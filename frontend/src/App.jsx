@@ -396,7 +396,7 @@ const loadMediaPipe = async () => {
     command.includes("에이아이") ||
     command.includes("생성형")
   ) {
-    movePage("ai");
+    movePage("AI");
     setText("생성형 AI 페이지입니다.");
     return;
   }
