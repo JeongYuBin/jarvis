@@ -699,7 +699,45 @@ const handleGestureResult = (results) => {
   };
 
   const askAi = async () => {
-    if (!aiQuestion.trim()) return;
+    await askAiWithMessage(aiQuestion);
+  };
+
+  // AI 음성으로 질문하기 
+  const startAiVoiceQuestion = () => {
+    if (!hasAiApiKey) {
+      const reply = "API Key를 먼저 등록해주세요.";
+      setText(reply);
+      speak(reply);
+      return;
+    }
+
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Chrome 브라우저에서 실행해주세요.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "ko-KR";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.start();
+
+    recognition.onresult = async (event) => {
+      const question = event.results[0][0].transcript;
+
+      setAiQuestion(question);
+      setText(`AI 질문: ${question}`);
+
+      await askAiWithMessage(question);
+    };
+  };
+
+  const askAiWithMessage = async (message) => {
+    if (!message.trim()) return;
 
     setAiAnswer("생성형 AI가 답변을 생성 중입니다...");
 
@@ -708,13 +746,14 @@ const handleGestureResult = (results) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ message: aiQuestion }),
+      body: JSON.stringify({ message }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
       setAiAnswer(data.message || "AI 요청 실패");
+      speak(data.message || "AI 요청에 실패했습니다.");
       return;
     }
 
@@ -998,6 +1037,9 @@ const handleGestureResult = (results) => {
 
               <button onClick={askAi} disabled={!hasAiApiKey}>
                 질문하기
+              </button>
+              <button onClick={startAiVoiceQuestion} disabled={!hasAiApiKey}>
+                음성으로 질문하기
               </button>
 
               <div className="ai-answer">
