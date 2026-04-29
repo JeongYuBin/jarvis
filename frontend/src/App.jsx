@@ -30,6 +30,8 @@ function App() {
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
 
+  const positionsRef = useRef([]);
+  const gestureLockRef = useRef(false); 
   const videoRef = useRef(null);
   const cameraRef = useRef(null);
   const gestureStartXRef = useRef(null);
@@ -454,47 +456,114 @@ const loadMediaPipe = async () => {
   return sum / palmPoints.length;
 };
 
+// 중지 손가락 감지 함수
+const isMiddleFinger = (landmarks) => {
+  // 중지 펴짐
+  const middleUp = landmarks[12].y < landmarks[10].y;
+
+  // 나머지 손가락 접힘
+  const indexDown = landmarks[8].y > landmarks[6].y;
+  const ringDown = landmarks[16].y > landmarks[14].y;
+  const pinkyDown = landmarks[20].y > landmarks[18].y;
+
+  return middleUp && indexDown && ringDown && pinkyDown;
+};
+
 const handleGestureResult = (results) => {
   if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
-    gestureStartXRef.current = null;
+    positionsRef.current = [];
+    gestureLockRef.current = false;
     return;
   }
+
+  const now = Date.now();
 
   const landmarks = results.multiHandLandmarks[0];
   const palmX = getPalmCenterX(landmarks);
-  const now = Date.now();
 
+  // 손바닥 → Main
   if (isPalmOpen(landmarks)) {
     movePage("home");
-    setGestureText("손바닥 감지 → Main 페이지");
-    gestureStartXRef.current = null;
+    setGestureText("손바닥 감지 → Main");
+    positionsRef.current = [];
     return;
   }
 
-  if (gestureStartXRef.current === null) {
-    gestureStartXRef.current = palmX;
+  const handsDetected = results.multiHandLandmarks
+
+  // 양손 가운데 손가락
+  if (
+    handsDetected.length >= 2 &&
+    isMiddleFinger(results.multiHandLandmarks[0]) &&
+    isMiddleFinger(results.multiHandLandmarks[1]) &&
+    !gestureLockRef.current
+  ) {
+    gestureLockRef.current = true;
+
+    window.open("https://www.youtube.com/watch?v=WfIXP7ygOvE&list=RDWfIXP7ygOvE&start_radio=1", "_blank");
+
+    setGestureText("이스터에그 실행 (양손)");  // 이스터에그 실행 (양손)
+
+    setTimeout(() => {
+      gestureLockRef.current = false;
+    }, 2000);
+
     return;
   }
 
-  const diffX = palmX - gestureStartXRef.current;
+  // 가운데 손가락 (한 손)
+  if (isMiddleFinger(landmarks) && !gestureLockRef.current) {
+    gestureLockRef.current = true;
 
-  if (now - lastGestureTimeRef.current < 900) {
+    window.open("https://www.youtube.com/watch?v=8vkkAmFcYN4&list=RD8vkkAmFcYN4&start_radio=1", "_blank");
+
+    setGestureText("이스터에그 실행");  // 😎 이스터에그 실행 (한 손)
+
+    setTimeout(() => {
+      gestureLockRef.current = false;
+    }, 2000);
+
     return;
   }
 
-  if (diffX > 0.18) {  // 민감도(인식 잘 안되면 낮추기)
-    lastGestureTimeRef.current = now;
-    gestureStartXRef.current = palmX;
-    moveNextPage();
-    return;
+  // 스와이프 (프레임 누적)
+  positionsRef.current.push(palmX);
+
+  if (positionsRef.current.length > 12) {
+    positionsRef.current.shift();
   }
 
-  if (diffX < -0.18) {
-    lastGestureTimeRef.current = now;
-    gestureStartXRef.current = palmX;
-    movePrevPage();
-    return;
-  } 
+  if (positionsRef.current.length === 12 && !gestureLockRef.current) {
+    const start = positionsRef.current[0];
+    const end = positionsRef.current[11];
+    const diff = end - start;
+
+    if (Math.abs(diff) > 0.22) {
+      gestureLockRef.current = true;
+
+      if (diff > 0) {
+        moveNextPage();
+        setGestureText("오른쪽 스와이프");
+      } else {
+        movePrevPage();
+        setGestureText("왼쪽 스와이프");
+      }
+
+      positionsRef.current = [];
+      gestureLockRef.current = true;
+      positionsRef.current = [];
+      // 방향 복귀 무시용 기준값 저장
+      gestureStartXRef.current = palmX;
+
+      setTimeout(() => {
+        gestureLockRef.current = false;
+
+        // 완전히 초기화
+        positionsRef.current = [];
+        gestureStartXRef.current = null;
+      }, 1500);
+    }
+  }
 };
 
   const startGestureMode = async () => {
@@ -507,7 +576,7 @@ const handleGestureResult = (results) => {
     });
 
     hands.setOptions({
-      maxNumHands: 1,
+      maxNumHands: 2,
       modelComplexity: 1,
       minDetectionConfidence: 0.7,
       minTrackingConfidence: 0.7,
