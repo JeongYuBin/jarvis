@@ -33,6 +33,13 @@ db.serialize(() => {
     actions TEXT NOT NULL
   )
 `);
+
+  db.run(`
+  CREATE TABLE IF NOT EXISTS ai_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    api_key TEXT
+  )
+`);
 });
 
 module.exports = db;

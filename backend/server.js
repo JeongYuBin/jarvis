@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const db = require("./database");
-
+const OpenAI = require("openai");
 const app = express();
 const PORT = 4000;
 
@@ -208,6 +208,97 @@ app.delete("/api/modes/:id", (req, res) => {
     }
 
     res.json({ message: "모드 삭제 성공" });
+  });
+});
+
+// AI 조회
+app.get("/api/ai/settings", (req, res) => {
+  db.get("SELECT api_key FROM ai_settings WHERE id = 1", [], (err, row) => {
+    if (err) {
+      return res.status(500).json({ message: "AI 설정 조회 실패" });
+    }
+
+    res.json({
+      hasApiKey: !!row?.api_key,
+    });
+  });
+});
+
+// AI API 등록
+app.post("/api/ai/settings", (req, res) => {
+  const { apiKey } = req.body;
+
+  if (!apiKey || apiKey.trim() === "") {
+    return res.status(400).json({ message: "API Key가 비어 있습니다." });
+  }
+
+  db.run(
+    `
+    INSERT INTO ai_settings (id, api_key)
+    VALUES (1, ?)
+    ON CONFLICT(id) DO UPDATE SET api_key = excluded.api_key
+    `,
+    [apiKey],
+    function (err) {
+      if (err) {
+        return res.status(500).json({ message: "API Key 저장 실패" });
+      }
+
+      res.json({ message: "API Key 저장 성공" });
+    }
+  );
+});
+
+// AI 삭제
+app.delete("/api/ai/settings", (req, res) => {
+  db.run("DELETE FROM ai_settings WHERE id = 1", [], function (err) {
+    if (err) {
+      return res.status(500).json({ message: "API Key 삭제 실패" });
+    }
+
+    res.json({ message: "API Key 삭제 성공" });
+  });
+});
+
+// AI 등록
+app.post("/api/ai/chat", (req, res) => {
+  const { message } = req.body;
+
+  if (!message || message.trim() === "") {
+    return res.status(400).json({ message: "질문이 비어 있습니다." });
+  }
+
+  db.get("SELECT api_key FROM ai_settings WHERE id = 1", [], async (err, row) => {
+    if (err) {
+      return res.status(500).json({ message: "API Key 조회 실패" });
+    }
+
+    if (!row?.api_key) {
+      return res.status(403).json({
+        message: "API Key가 등록되어 있지 않습니다.",
+      });
+    }
+
+    try {
+      const client = new OpenAI({
+        apiKey: row.api_key,
+      });
+
+      const response = await client.responses.create({
+        model: "gpt-5.5",
+        input: message,
+      });
+
+      res.json({
+        answer: response.output_text,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({
+        message: "AI 응답 생성 실패",
+        error: error.message,
+      });
+    }
   });
 });
 
