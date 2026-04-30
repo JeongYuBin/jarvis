@@ -25,6 +25,7 @@ function App() {
   const [hasAiApiKey, setHasAiApiKey] = useState(false);
   const [aiQuestion, setAiQuestion] = useState("");
   const [aiAnswer, setAiAnswer] = useState("");
+  const [isVoiceOn, setIsVoiceOn] = useState(false);
 
   const today = new Date();
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
@@ -37,6 +38,7 @@ function App() {
   const gestureStartXRef = useRef(null);
   const lastGestureTimeRef = useRef(0);
   const pageRef = useRef(page);
+  const voiceRecognitionRef = useRef(null);
 
   useEffect(() => {
     pageRef.current = page;
@@ -408,27 +410,63 @@ const loadMediaPipe = async () => {
     speak(reply);
   };
 
-  const startListeningOnce = () => {
+  const startVoiceMode = () => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
 
+    console.log("SpeechRecognition:", SpeechRecognition);
+
     if (!SpeechRecognition) {
-      alert("Chrome 브라우저에서 실행해주세요.");
+      alert("음성 인식을 지원하지 않습니다.");
       return;
     }
 
     const recognition = new SpeechRecognition();
+
     recognition.lang = "ko-KR";
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = false;
 
-    recognition.start();
+    voiceRecognitionRef.current = recognition;
+    setIsVoiceOn(true);
+    setText("음성 인식이 켜졌습니다.");
 
     recognition.onresult = (event) => {
-      const command = event.results[0][0].transcript;
+      const command = event.results[event.results.length - 1][0].transcript;
       setText(`인식된 명령: ${command}`);
       handleCommand(command);
     };
+
+    recognition.onerror = (event) => {
+      console.log("음성 인식 오류:", event.error);
+      setText(`음성 인식 오류: ${event.error}`);
+
+      if (event.error === "not-allowed" || event.error === "audio-capture") {
+        stopVoiceMode();
+      }
+    };
+
+    recognition.onend = () => {
+      if (voiceRecognitionRef.current) {
+        try {
+          recognition.start();
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    };
+
+    recognition.start();
+  };
+
+  const stopVoiceMode = () => {
+    setIsVoiceOn(false);
+    setText("음성 인식이 꺼졌습니다.");
+
+    if (voiceRecognitionRef.current) {
+      voiceRecognitionRef.current.stop();
+      voiceRecognitionRef.current = null;
+    }
   };
 
   const isPalmOpen = (landmarks) => {
@@ -651,7 +689,7 @@ const handleGestureResult = (results) => {
     return schedules.filter((schedule) => schedule.schedule_date === dateKey);
   };
 
-  // Mode 실행 함수(GameMode, StudeMode)
+  // Mode 실행 함수(GameMode, StudyMode)
   const runMode = (mode) => {
     let actions = [];
 
@@ -830,6 +868,30 @@ const handleGestureResult = (results) => {
     speak(data.answer);
   };
 
+  // Electron 기능 호출하기
+  const openNotepad = async () => {
+    const result = await window.jarvisAPI.openApp(
+      "C:\\Windows\\System32\\notepad.exe"
+    );
+
+    console.log(result);
+  };
+
+  const openJarvisDataFolder = async () => {
+    const path = await window.jarvisAPI.openUserDataFolder();
+    console.log(path);
+  };
+
+  const enableAutoLaunch = async () => {
+    const result = await window.jarvisAPI.setAutoLaunch(true);
+    console.log(result);
+  };
+
+  const disableAutoLaunch = async () => {
+    const result = await window.jarvisAPI.setAutoLaunch(false);
+    console.log(result);
+  };
+
   return (
     <div className="app-layout">
       <button className="hamburger-btn" onClick={() => setIsMenuOpen(true)}>
@@ -859,7 +921,7 @@ const handleGestureResult = (results) => {
 
       <main className="container">
         <h1>J.A.R.V.I.S</h1>
-        <p className="subtitle">Personal AI Assistant Demo</p>
+        <p className="subtitle">Personal AI Assistant</p>
 
         <video ref={videoRef} className="camera-preview" playsInline />
 
@@ -874,27 +936,13 @@ const handleGestureResult = (results) => {
             </div>
 
             <div className="control-buttons">
-              <button onClick={startListeningOnce}>음성 명령 시작</button>
+              <button onClick={isVoiceOn ? stopVoiceMode : startVoiceMode}>
+                {isVoiceOn ? "음성 OFF" : "음성 ON"}
+              </button>
 
-              {isGestureMode ? (
-                <button onClick={stopGestureMode}>제스처 인식 종료</button>
-              ) : (
-                <button onClick={startGestureMode}>제스처 인식 시작</button>
-              )}
-            </div>
-
-            <div className="gesture-panel">
-              <p>{gestureText}</p>
-              <span>손바닥 펼치기 → Main</span>
-              <span>오른쪽 스와이프 → 다음 페이지</span>
-              <span>왼쪽 스와이프 → 이전 페이지</span>
-            </div>
-
-            <div className="command-guide">
-              <p>사용 가능한 명령어</p>
-              <span>“Jarvis 메모 페이지로 이동해줘”</span>
-              <span>“Jarvis 달력 페이지로 이동해줘”</span>
-              <span>“Jarvis 4월 30일 세션 발표 추가해줘”</span>
+              <button onClick={isGestureMode ? stopGestureMode : startGestureMode}>
+                {isGestureMode ? "제스처 OFF" : "제스처 ON"}
+              </button>
             </div>
           </section>
         )}

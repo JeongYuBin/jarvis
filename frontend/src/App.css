@@ -11,10 +11,10 @@ body {
 
 .hamburger-btn {
   position: fixed;
-  top: 24px;
-  right: 28px;
-  width: 58px;
-  height: 58px;
+  top: 18px;
+  right: 22px;
+  width: 48px;
+  height: 48px;
   padding: 0;
   border: 1px solid #7beaff;
   border-radius: 12px;
@@ -25,9 +25,9 @@ body {
 
 .hamburger-btn span {
   display: block;
-  width: 28px;
-  height: 3px;
-  margin: 6px auto;
+  width: 24px;
+  height: 2px;
+  margin: 5px auto;
   background: #dffaff;
   border-radius: 10px;
 }
@@ -82,23 +82,24 @@ body {
 .container {
   width: 100%;
   text-align: center;
-  padding: 36px 60px 80px;
+  padding: 20px 24px 32px;
   min-height: 100vh;
   box-sizing: border-box;
 }
 
 h1 {
   margin: 0;
-  font-size: 64px;
-  letter-spacing: 12px;
+  font-size: 42px;
+  letter-spacing: 8px;
   color: #f3fbff;
-  text-shadow: 0 0 24px #76eaff;
+  text-shadow: 0 0 20px #76eaff;
 }
 
 .subtitle {
-  margin-top: 8px;
+  margin-top: 4px;
+  font-size: 12px;
   color: #9befff;
-  letter-spacing: 6px;
+  letter-spacing: 4px;
 }
 
 .page-section {
@@ -106,40 +107,40 @@ h1 {
 }
 
 .circle {
-  margin: 40px auto;
-  width: 280px;
-  height: 280px;
-  border: 3px solid #7beaff;
+  margin: 26px auto;
+  width: 170px;
+  height: 170px;
+  border: 2px solid #7beaff;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 45px #00e5ff;
+  box-shadow: 0 0 35px #00e5ff;
   animation: pulse 2s infinite;
 }
 
 .circle span {
-  font-size: 30px;
-  letter-spacing: 8px;
+  font-size: 20px;
+  letter-spacing: 5px;
 }
 
 .panel {
-  margin: 30px auto;
-  width: 75%;
-  padding: 22px;
+  margin: 24px auto;
+  width: 86%;
+  padding: 18px;
   border: 1px solid #7beaff;
   background: rgba(0, 229, 255, 0.1);
-  box-shadow: 0 0 22px rgba(0, 229, 255, 0.4);
-  font-size: 20px;
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.4);
+  font-size: 15px;
 }
 
 button {
-  padding: 15px 30px;
+  padding: 10px 16px;
   background: transparent;
   color: #7beaff;
   border: 1px solid #7beaff;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 13px;
   letter-spacing: 2px;
 }
 
@@ -151,58 +152,21 @@ button:hover {
 .control-buttons {
   display: flex;
   justify-content: center;
-  gap: 16px;
+  gap: 10px;
 }
 
 .camera-preview {
   position: fixed;
-  left: 24px;
-  bottom: 24px;
-  width: 220px;
-  height: 160px;
+  left: 18px;
+  bottom: 18px;
+  width: 230px;
+  height: 200px;
   object-fit: cover;
   border: 1px solid #7beaff;
-  box-shadow: 0 0 18px rgba(0, 229, 255, 0.35);
-  opacity: 0.65;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.35);
+  opacity: 0.45;
   transform: scaleX(-1);
   z-index: 20;
-}
-
-.gesture-panel {
-  margin: 32px auto 0;
-  width: 70%;
-  padding: 18px;
-  border: 1px solid rgba(123, 234, 255, 0.55);
-  background: rgba(0, 229, 255, 0.07);
-}
-
-.gesture-panel p {
-  margin: 0 0 12px;
-  color: #f3fbff;
-}
-
-.gesture-panel span {
-  display: block;
-  margin: 7px 0;
-}
-
-.command-guide {
-  margin: 34px auto 0;
-  width: 70%;
-  border-top: 1px solid #7beaff;
-  padding-top: 24px;
-  color: #dffaff;
-}
-
-.command-guide p {
-  font-size: 20px;
-  margin-bottom: 14px;
-}
-
-.command-guide span {
-  display: block;
-  margin: 8px 0;
-  color: #7beaff;
 }
 
 .page-section h2 {
