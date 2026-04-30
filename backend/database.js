@@ -1,10 +1,15 @@
 const sqlite3 = require("sqlite3").verbose();
+const path = require("path");
 
-const db = new sqlite3.Database("./jarvis.db", (err) => {
+const dbPath = process.env.JARVIS_DB_PATH
+  ? path.join(process.env.JARVIS_DB_PATH, "jarvis.db")
+  : path.join(__dirname, "jarvis.db");
+
+const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error("SQLite 연결 실패:", err.message);
   } else {
-    console.log("SQLite 연결 성공");
+    console.log("SQLite 연결 성공:", dbPath);
   }
 });
 
