@@ -23,4 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
+release/
+backend/whisper/*.binrelease/
 backend/whisper/*.bin
