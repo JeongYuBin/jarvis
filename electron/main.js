@@ -33,6 +33,16 @@ function createWindow() {
     },
   });
 
+  session.defaultSession.setPermissionRequestHandler(
+    (webContents, permission, callback) => {
+      if (permission === "media") {
+        callback(true);
+      } else {
+        callback(false);
+      }
+    }
+  );
+
   const isDev = !app.isPackaged;
 
   if (isDev) {

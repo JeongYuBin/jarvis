@@ -414,8 +414,6 @@ const loadMediaPipe = async () => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    console.log("SpeechRecognition:", SpeechRecognition);
-
     if (!SpeechRecognition) {
       alert("음성 인식을 지원하지 않습니다.");
       return;
@@ -427,36 +425,22 @@ const loadMediaPipe = async () => {
     recognition.continuous = true;
     recognition.interimResults = false;
 
-    voiceRecognitionRef.current = recognition;
-    setIsVoiceOn(true);
-    setText("음성 인식이 켜졌습니다.");
-
-    recognition.onresult = (event) => {
-      const command = event.results[event.results.length - 1][0].transcript;
-      setText(`인식된 명령: ${command}`);
-      handleCommand(command);
-    };
-
     recognition.onerror = (event) => {
       console.log("음성 인식 오류:", event.error);
       setText(`음성 인식 오류: ${event.error}`);
-
-      if (event.error === "not-allowed" || event.error === "audio-capture") {
-        stopVoiceMode();
-      }
     };
 
-    recognition.onend = () => {
-      if (voiceRecognitionRef.current) {
-        try {
-          recognition.start();
-        } catch (error) {
-          console.error(error);
-        }
-      }
+    recognition.onresult = (event) => {
+      const command = event.results[event.results.length - 1][0].transcript;
+      console.log("음성 인식 결과:", command);
+      setText(command);
     };
 
     recognition.start();
+
+    voiceRecognitionRef.current = recognition;
+    setIsVoiceOn(true);
+    setText("음성 인식이 켜졌습니다.");
   };
 
   const stopVoiceMode = () => {
